@@ -1,0 +1,36 @@
+name: A rules provider for Mihomo / OG kernel
+
+on:
+  schedule:
+    - cron: '0 */12 * * *'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: repack
+        run: |
+          # abp-style domains
+          VAR='awk '\''BEGIN {print "# repack by @sxlmnwb [sxlmnwb.dev@gmail.com]\n# source: https://github.com/sxlmnwb/rule_providers\n\npayload:"} /^\|\|/ {gsub(/\^\$/, "", $1); print "- DOMAIN-SUFFIX," substr($1, 3)}'\'' | sed '\''s/\^$//'\'''
+          # abp list domain
+          curl -Ls https://big.oisd.nl | eval ${VAR} > big_oisd.yaml
+          curl -Ls https://nsfw.oisd.nl | eval ${VAR} > nsfw_oisd.yaml
+          curl -Ls https://raw.githubusercontent.com/d3ward/toolz/master/src/d3host.adblock | eval ${VAR} > d3host.yaml
+          curl -Ls https://raw.githubusercontent.com/ABPindo/indonesianadblockrules/refs/heads/master/subscriptions/aghome.txt | eval ${VAR} > ABPindo.yaml
+      - name: commit changes
+        shell: bash
+        run: |
+          # date
+          DATE="$(TZ='Asia/Jakarta' date)"
+          echo ${DATE}
+          git config --global user.name "Salman Wahib"
+          git config --global user.email "sxlmnwb.dev@gmail.com"
+          git add .
+          git commit -am "schedule: repack at ${DATE}" --signoff
+      - name: Push changes
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+        run: |
+          git push -f || echo "No changes to commit"
