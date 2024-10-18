@@ -11,6 +11,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Get sing-box
+        run: |
+          version="1.10.1"
+          wget https://github.com/SagerNet/sing-box/releases/download/v${version}/sing-box-${version}-linux-amd64.tar.gz
+          tar -xvf *.tar.gz --strip-components=1
+
       - name: Repack rule-set
         run: |
           VAR="./sing-box rule-set convert --type adguard"
@@ -30,8 +36,10 @@ jobs:
           curl -Ls https://nsfw.oisd.nl -o nsfw_oisd.txt
           $VAR --output nsfw_oisd.srs nsfw_oisd.txt
           
-          rm -rf *.txt
-      
+      - name: Clean
+        run: |
+          rm -rf sing-box *.txt *.tar.gz
+          
       - name: Commit changes
         shell: bash
         run: |
@@ -40,7 +48,7 @@ jobs:
           git config --global user.name "Salman Wahib"
           git config --global user.email "sxlmnwb.dev@gmail.com"
           git add .
-          git commit -am "schedule: repack at ${DATE}" --signoff
+          git commit -am "schedule: repack at ${DATE}"
       
       - name: Push changes
         env:
